@@ -4,8 +4,8 @@
 class RobotArm {
   private: 
     bool debug = true;
-    int servoStepSize = 5;
-    int servoWriteDelay = 30;
+    int servoStepSize = 1;
+    int servoWriteDelay = 5;
     Servo gelenk0 = Servo(1, 300, "Gelenk", 0);
     Servo gelenk1 = Servo(2, 200, "Gelenk", 1);
     Servo gelenk2 = Servo(3, 600, "Gelenk", 2);
@@ -15,13 +15,13 @@ class RobotArm {
 
     void log(String Message){
       if(debug){
-        Serial.println("[DEBUG] RobotArm: - " + Message);
+        Serial.println("[DEBUG] RobotArm: - " + String(Message));
       }
     }
 
   public:
     RobotArm(){
-      Serial.println("\nHello world! This is a RobotArm!");
+      log(String("Hello world! This is a RobotArm!"));
       // ====================================
       // GELENK   0
       // ====================================
@@ -29,7 +29,7 @@ class RobotArm {
       //gelenk0.init(1, 300, "Gelenk", 0);
       gelenk0.SetMinPos(200);
       gelenk0.SetMaxPos(600);
-      gelenk0.SetStraightPos(420);
+      gelenk0.SetStraightPos(410);
 
       // ====================================
       // GELENK   1
@@ -60,6 +60,8 @@ class RobotArm {
       // ====================================
       //dreher0.init(0, 550, "Dreher", 0);
       dreher0.SetStraightPos(550);
+      dreher0.SetMinPos(300);
+      dreher0.SetMaxPos(600);
       //dreher0.SetStraightPos(300);
 
       // ====================================
@@ -67,7 +69,8 @@ class RobotArm {
       // ====================================
       //dreher1.init(4, 490, "Dreher", 1);
       dreher1.SetStraightPos(490);
-
+      dreher1.SetMinPos(300);
+      dreher1.SetMaxPos(600);
       log(String("Gelenk0 currentPos: " + gelenk0.currentPos));
     }
 
@@ -87,62 +90,85 @@ class RobotArm {
       gelenk2.DriveToRest();
     }
 
-    void SetDesiredPosition(String preset){
-      if(preset == "REST"){
+    void SetDesiredPosition(DesiredPositions preset){
+      if(preset == REST){
         log("Setting REST Position");
         gelenk0.desiredPos = gelenk0.restingPos;
         gelenk1.desiredPos = gelenk1.restingPos;
         gelenk2.desiredPos = gelenk2.restingPos;
-        dreher0.desiredPos = dreher0.restingPos;
-        dreher1.desiredPos = dreher1.restingPos;
-      } else if ("STRAIGHT") {
+        //dreher0.desiredPos = dreher0.restingPos;
+        //dreher1.desiredPos = dreher1.restingPos;
+      } else if (preset == STRAIGHT) {
         log("Setting STRAIGHT Position");
         gelenk0.desiredPos = gelenk0.straightServoPos;
         gelenk1.desiredPos = gelenk1.straightServoPos;
         gelenk2.desiredPos = gelenk2.straightServoPos;
-        dreher0.desiredPos = dreher0.straightServoPos;
-        dreher1.desiredPos = dreher1.straightServoPos;
+        //dreher0.desiredPos = dreher0.straightServoPos;
+        //dreher1.desiredPos = dreher1.straightServoPos;
+      } else if(preset == GREIFER_OPEN){
+        log("Setting Greifer OPEN");
+        greifer.desiredPos = greifer.minServoPos;
+      } else if(preset == GREIFER_CLOSE){
+        log("Setting Greifer CLOSE");
+        greifer.desiredPos = greifer.maxServoPos;
+      } else if(preset == TURN_AWAY_FROM_DESK){
+        log("Setting TURN AWAY");
+        dreher0.desiredPos = 200;
+      } else if(preset == TURN_TO_DESK_ALIGNED){
+        log("Setting TURN DESK ALIGNED");
+        dreher0.desiredPos = dreher0.restingPos;
+      } else if(preset == POS_1){
+        log("Setting POSITION 1");
+        SetDesiredPosition(GREIFER_OPEN);
+        SetDesiredPosition(TURN_TO_DESK_ALIGNED);
+        gelenk0.desiredPos = 430 ;
+        gelenk1.desiredPos = 180 - 10;
+        gelenk2.desiredPos = 660 - 20;
       }
     }
 
     bool AreAnyDeiredPositionsLeft(){
-      log("Checking if any positions are left to drive to");
-      if(gelenk0.desiredPos == 0 && gelenk1.desiredPos == 0 && gelenk2.desiredPos == 0 && dreher0.desiredPos == 0 && dreher1.desiredPos == 0){
+      //log("Checking if any positions are left to drive to");
+      if(
+        gelenk0.desiredPos == 0 && 
+        gelenk1.desiredPos == 0 && 
+        gelenk2.desiredPos == 0 && 
+        dreher0.desiredPos == 0 && 
+        dreher1.desiredPos == 0 &&
+        greifer.desiredPos == 0){
         log("No desired position is left.");
         return false;
       }
-      log("Position found");
+      //log("Position found");
       return true;
     }
 
     void DriveToDesiredPos(){
-      int servoAtDesiredPosCount = 0;
-
+      
       do {
         
-        if(gelenk0.desiredPos){
+        if(gelenk0.desiredPos > 0){
           gelenk0.DriveServoStep();
-        } else { servoAtDesiredPosCount++; }
+        }
 
-        if(gelenk1.desiredPos){
+        if(gelenk1.desiredPos > 0){
           gelenk1.DriveServoStep();
-        } else { servoAtDesiredPosCount++; }
+        }
 
-        if(gelenk2.desiredPos){
+        if(gelenk2.desiredPos > 0){
           gelenk2.DriveServoStep();
-        } else { servoAtDesiredPosCount++; }
+        }
 
-        if(dreher0.desiredPos){
+        if(dreher0.desiredPos > 0){
           dreher0.DriveServoStep();
-        } else { servoAtDesiredPosCount++; }
+        }
 
-        if(dreher1.desiredPos){
+        if(dreher1.desiredPos > 0){
           dreher1.DriveServoStep();
-        } else { servoAtDesiredPosCount++; }
+        }
 
-        if(servoAtDesiredPosCount == 5 ){
-          log("servoAtDesiredPosCount == 5, breaking loop!");
-          break;
+        if(greifer.desiredPos > 0){
+          greifer.DriveServoStep();
         }
 
         delay(servoWriteDelay);

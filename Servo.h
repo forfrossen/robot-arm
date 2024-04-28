@@ -16,7 +16,7 @@ class Servo {
     int minServoPos = 100;
     int maxServoPos = 600;
     int straightServoPos = 0;
-    int servoStepSize = 10;
+    int servoStepSize = 5;
     int servoWriteDelay = 20;
     int restingPos = 0;
     int pin = 0;
@@ -25,6 +25,7 @@ class Servo {
     int desiredPos = 0;
     String type;
     int number;
+    bool invalidDesiredPosition = false;
     
     Servo(int pin, int restingPos, String type, int number){
       myServos = Adafruit_PWMServoDriver();
@@ -35,7 +36,7 @@ class Servo {
       this->number = number;
       this->type = type;
 
-      log("Init");
+      log(String("Init"));
       SetRestingPosition(restingPos);
       Rest();
     }
@@ -79,12 +80,12 @@ class Servo {
     }
 
     void Up() {
-      log("Opening Greifer");
+      log(String("Opening Greifer"));
       DriveServo(minServoPos);
     }
 
     void Down(){
-      log("Closing Greifer");
+      log(String("Closing Greifer"));
       DriveServo(maxServoPos);
     }
 
@@ -101,32 +102,51 @@ class Servo {
     bool isPosAllowed(int pos){
       bool returnValue;
       if(minServoPos && pos < minServoPos){
-        log(String("isPosAllowed - Have to return false! Pos: " + String(pos) + " minServoPos: " + minServoPos + " currentPos: " + currentPos));
+        invalidDesiredPosition = true;
+        log(String("isPosAllowed - Have to return false! Pos: " + String(pos) + " minServoPos: " + String(minServoPos) + " currentPos: " + String(currentPos)));
         return false;       
       }
       if(maxServoPos && pos > maxServoPos){
+        invalidDesiredPosition = true;
+        log(String("isPosAllowed - Have to return false! Pos: " + String(pos) + " maxServoPos: " + String(maxServoPos) + " currentPos: " + String(currentPos)));
         return false;
       }
       return true;
     }
 
     void DriveServoStep(){
+      int nextStep = 0;
       if(desiredPos == 0){
-        log("Nowhere to go ...");
+        log(String("Nowhere to go ..."));
         return;
       }
 
       if (desiredPos == currentPos) {
-        log("Desired position has been reached!");
+        log("Desired position has been reached: " + String(desiredPos) + " CurrentPos: " + String(currentPos));
         desiredPos = 0;
         return;
       }
       
-      int nextStep = currentPos + (desiredPos < currentPos ? -servoStepSize : servoStepSize);
-      log(String("Next step is: " + nextStep));
+       
+
+      if(desiredPos > currentPos){
+        if((desiredPos - currentPos) <= servoStepSize){
+          nextStep = desiredPos;
+        } else {
+          nextStep = currentPos + (desiredPos < currentPos ? -servoStepSize : servoStepSize);
+        }
+      } else {
+        if((currentPos - desiredPos) <= servoStepSize){
+          nextStep = desiredPos;
+        } else { 
+          nextStep = currentPos + (desiredPos < currentPos ? -servoStepSize : servoStepSize); 
+        }
+      }
+
+      log(String("Next step is: " + String(nextStep)));
 
       if (!isPosAllowed(nextStep)) {
-        log("Position not allowed: " + String(desiredPos));
+        log(String("Position not allowed: " + String(desiredPos)));
         desiredPos = 0;
       }
 
@@ -136,10 +156,10 @@ class Servo {
 
     void DriveServo(int pos){
       if(currentPos >= pos){
-        log("Driving Servo up");
+        log(String("Driving Servo up"));
         DriveServoUp(pos);
       } else {
-        log("Driving Servo down");
+        log(String("Driving Servo down"));
         DriveServoDown(pos);
       }
     }
@@ -150,9 +170,9 @@ class Servo {
     }
 
     void DriveServoUp(int desiredPos){
-      log("Driving Gelenk servo to position: " + char(desiredPos));
+      log(String("Driving Gelenk servo to position: " + char(desiredPos)));
       for (int pos = currentPos; pos >= desiredPos; pos -= servoStepSize) {
-        log("moving Greifer to Pos: " + char(pos));
+        log(String("moving Greifer to Pos: " + char(pos)));
         myServos.setPWM(servonum, 0, pos);
         currentPos = pos;
         delay(servoWriteDelay);
@@ -160,9 +180,9 @@ class Servo {
     }
 
     void DriveServoDown(int desiredPos){
-      log("Driving Gelenk servo to position: " + char(desiredPos));
+      log(String("Driving Gelenk servo to position: " + char(desiredPos)));
       for (int pos = currentPos; pos <= desiredPos; pos += servoStepSize) { 
-          log("moving Greifer to Pos: " + char(pos));
+          log(String("moving Greifer to Pos: " + char(pos)));
           myServos.setPWM(servonum, 0, pos);
           currentPos = pos;
           delay(servoWriteDelay);

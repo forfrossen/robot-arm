@@ -1,0 +1,8 @@
+{
+  "arduino.useArduinoCli": false,
+  "arduino.clearOutputOnBuild": true,
+  "arduino.commandPath": "arduino-cli.exe",
+  "arduino.enableUSBDetection": false,
+  "arduino.logLevel": "info",
+  "arduino.path": "'C:\\Program Files\\Arduino CLI\\'"
+}
